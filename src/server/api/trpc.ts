@@ -98,6 +98,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
 });
 
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const authMiddleware = t.middleware(async ({ next, ctx }) => {
   const authVar = await auth();
   if (!authVar.userId) {

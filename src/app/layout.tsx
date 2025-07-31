@@ -13,6 +13,8 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Web App",
@@ -39,16 +41,19 @@ export default function RootLayout({
           <body
             className={`${geist.variable} dark min-h-dvh bg-radial from-orange-950 to-neutral-950 antialiased`}
           >
-            <header className="bg-card flex h-16 items-center justify-end gap-4 p-4">
-              <SignedOut>
-                <SignInButton />
-                <SignUpButton />
-              </SignedOut>
-              <SignedIn>
-                <UserButton />
-              </SignedIn>
-            </header>
-            {children}
+            <ThemeProvider>
+              <header className="bg-card flex h-16 items-center justify-end gap-4 p-4">
+                <SignedOut>
+                  <SignInButton />
+                  <SignUpButton />
+                </SignedOut>
+                <SignedIn>
+                  <UserButton />
+                </SignedIn>
+              </header>
+              {children}
+              <Toaster />
+            </ThemeProvider>
           </body>
         </html>
       </TRPCReactProvider>
