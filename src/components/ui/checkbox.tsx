@@ -5,7 +5,7 @@ import { useState } from "react";
 type CheckboxProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  label?: string;
+  label?: string | React.ReactNode;
   disabled?: boolean;
   className?: string;
 };
@@ -61,12 +61,16 @@ export function Checkbox({
         </div>
       </div>
       {label && (
-        <label
+        <div
           onClick={() => !disabled && onChange(!checked)}
-          className={`text-foreground ml-3 text-sm ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} transition-colors duration-150`}
+          className={`ml-3 ${disabled ? "cursor-not-allowed opacity-50" : ""} transition-colors duration-150`}
         >
-          {label}
-        </label>
+          {typeof label === "string" ? (
+            <span className="text-foreground text-sm">{label}</span>
+          ) : (
+            label
+          )}
+        </div>
       )}
     </div>
   );

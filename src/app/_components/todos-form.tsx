@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { api } from "@/trpc/react";
 import { Card } from "@/components/ui/card";
-import { TextInput } from "./ui/text-input";
+import { TextInput } from "@/components/ui/text-input";
 import { z } from "zod";
 import { toast } from "sonner";
 
@@ -18,34 +18,49 @@ export function LatestTodo() {
       // Show loading toast
       toast.loading("Adding todo...");
 
-      // Cancel any outgoing refetches
-      await utils.todos.getAll.cancel();
+      // Cancel any outgoing refetches to prevent race conditions
+      await utils.todos.getActivePaginated.cancel();
 
-      // Snapshot the previous value
-      const previousTodos = utils.todos.getAll.getData();
+      // Snapshot the previous value for rollback
+      const previousTodos = utils.todos.getActivePaginated.getData({
+        page: 1,
+        limit: 10,
+      });
 
       // Create optimistic todo
-      const optimisticTodo = {
-        id: Date.now(), // Temporary ID
-        userId: "temp", // Will be overwritten by server response
-        title: title.trim(),
-        isDone: false,
-        createdAt: new Date(),
-        updatedAt: null,
-      };
+      if (previousTodos) {
+        const optimisticId = -(Date.now() + Math.random() * 1000);
+        const now = new Date();
+        const optimisticTodo = {
+          id: optimisticId,
+          userId: "optimistic-user", // Will be replaced by server response
+          title: title.trim(),
+          isDone: false,
+          createdAt: now,
+          updatedAt: null,
+        };
 
-      // Optimistically add the new todo
-      utils.todos.getAll.setData(undefined, (old) => [
-        optimisticTodo,
-        ...(old ?? []),
-      ]);
+        // Optimistically add the new todo to the first page
+        utils.todos.getActivePaginated.setData(
+          { page: 1, limit: 10 },
+          {
+            ...previousTodos,
+            todos: [optimisticTodo, ...previousTodos.todos.slice(0, 9)], // Keep only 9 old todos to maintain page size
+            totalCount: previousTodos.totalCount + 1,
+          },
+        );
+      }
 
-      // Return a context object with the snapshotted value
-      return { previousTodos };
+      return { title, previousTodos };
     },
     onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      utils.todos.getAll.setData(undefined, context?.previousTodos);
+      // Rollback optimistic update on error
+      if (context?.previousTodos) {
+        utils.todos.getActivePaginated.setData(
+          { page: 1, limit: 10 },
+          context.previousTodos,
+        );
+      }
       toast.dismiss();
       toast.error("Failed to add todo. Please try again.");
     },
@@ -53,10 +68,13 @@ export function LatestTodo() {
       toast.dismiss();
       toast.success("Todo added successfully!");
       setName("");
+
+      // Trigger a refresh event that the TodoList can listen to
+      window.dispatchEvent(new CustomEvent("todoAdded"));
     },
     onSettled: async () => {
-      // Always refetch after error or success
-      await utils.todos.getAll.invalidate();
+      // Always refetch the active todos after adding a new one to get the real data
+      await utils.todos.getActivePaginated.invalidate();
     },
   });
 

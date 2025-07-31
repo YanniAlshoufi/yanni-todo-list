@@ -22,20 +22,15 @@ export default async function Home() {
             <SignedOut>
               <Card className="px-6 py-4 text-center">
                 <h2 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">
-                  Welcome to your Todo List
+                  Please sign in to view todos
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Please sign in to start managing your todos and stay
-                  organized!
-                </p>
               </Card>
             </SignedOut>
 
             <SignedIn>
               <LatestTodo />
+              <TodoList />
             </SignedIn>
-
-            <TodoList />
           </div>
         </div>
       </main>
